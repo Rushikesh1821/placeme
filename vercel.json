@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "name": "placeme",
+  "name": "placement-portal",
   "builds": [
     {
       "src": "client/package.json",
