@@ -77,78 +77,56 @@ placements/
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js (v18+)
-- Python (v3.9+)
+- Node.js 18+
 - MongoDB
-- Clerk Account
-- Cloudinary Account
+- Python 3.8+ (for AI service)
 
 ### Installation
 
-1. **Clone and Install Dependencies**
-
-```bash
-# Install backend dependencies
-cd server
-npm install
-
-# Install frontend dependencies
-cd ../client
-npm install
-
-# Install AI service dependencies
-cd ../ai-service
-pip install -r requirements.txt
-python -m spacy download en_core_web_sm
-```
-
-2. **Environment Setup**
-
-Create `.env` files in each directory using the provided `.env.example` files.
-
-### 🔐 Clerk Authentication Setup
-
-**Important**: Clerk authentication is required for the application to work properly.
-
-1. **Create Clerk Account**
-   - Go to [https://clerk.com](https://clerk.com) and create an account
-   - Create a new application with your preferred providers (Email, Google, etc.)
-
-2. **Configure Clerk**
-   - Set redirect URLs: `http://localhost:3006/sign-in`, `http://localhost:3006/sign-up`
-   - Configure user metadata schema with `role` field
-   - Get your publishable key from the dashboard
-
-3. **Update Environment Variables**
+1. **Clone the repository**
    ```bash
-   # In client/.env
-   VITE_CLERK_PUBLISHABLE_KEY=pk_test_your_actual_key_here
+   git clone https://github.com/Rushikesh1821/placeme.git
+   cd placeme
    ```
 
-4. **Test Authentication**
-   - Start the frontend server
-   - Open `http://localhost:3006`
-   - Test sign-up and sign-in functionality
+2. **Install dependencies**
+   ```bash
+   npm run install:all
+   ```
 
-📖 **For detailed instructions, see [CLERK_SETUP.md](./CLERK_SETUP.md)**
+3. **Environment Setup**
+   - Copy `server/.env.example` to `server/.env`
+   - Configure Clerk keys, MongoDB URI, and other environment variables
 
-⚡ **Quick Setup**: Run `setup-clerk.bat` (Windows) or `./setup-clerk.sh` (Linux/Mac) to check your setup.
+4. **Start the application**
+   ```bash
+   # Start all services
+   npm run dev
+   
+   # Or start individually
+   npm run dev:server  # Backend on http://localhost:5000
+   npm run dev:client  # Frontend on http://localhost:3000
+   npm run dev:ai      # AI service on http://localhost:5001
+   ```
 
-3. **Start Services**
+## 🌐 Deployment
 
-```bash
-# Terminal 1 - Backend
-cd server
-npm run dev
+### Vercel Deployment
 
-# Terminal 2 - Frontend
-cd client
-npm run dev
+The project is configured for Vercel deployment. See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed instructions.
 
-# Terminal 3 - AI Service
-cd ai-service
-python app.py
-```
+**Quick Deploy:**
+1. Connect your GitHub repository to Vercel
+2. Configure environment variables in Vercel dashboard
+3. Deploy automatically on push
+
+**Required Environment Variables:**
+- `MONGODB_URI` - MongoDB connection string
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` - Clerk public key
+- `CLERK_SECRET_KEY` - Clerk secret key
+- `CLOUDINARY_CLOUD_NAME` - Cloudinary cloud name
+- `CLOUDINARY_API_KEY` - Cloudinary API key
+- `CLOUDINARY_API_SECRET` - Cloudinary API secret
 
 ## 🔐 Authentication Roles
 
