@@ -18,6 +18,10 @@ import {
   ChevronDown,
   LogOut,
   Plus,
+  ClipboardList,
+  Activity,
+  Shield,
+  PieChart,
 } from 'lucide-react';
 
 // Navigation items for each role
@@ -37,10 +41,17 @@ const navigationConfig = {
   ],
   admin: [
     { name: 'Dashboard', href: '/admin', icon: Home },
+    { name: 'TPO Dashboard', href: '/admin/tpo-dashboard', icon: Shield },
     { name: 'Students', href: '/admin/students', icon: Users },
+    { name: 'Students Management', href: '/admin/students-management', icon: ClipboardList },
     { name: 'Recruiters', href: '/admin/recruiters', icon: Building2 },
+    { name: 'Companies', href: '/admin/companies-management', icon: Building2 },
     { name: 'Jobs', href: '/admin/jobs', icon: Briefcase },
+    { name: 'Jobs Management', href: '/admin/jobs-management', icon: ClipboardList },
     { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
+    { name: 'Reports', href: '/admin/reports', icon: PieChart },
+    { name: 'Activity Logs', href: '/admin/activity-logs', icon: Activity },
+    { name: 'TPO Settings', href: '/admin/tpo-settings', icon: Settings },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
   ],
 };
@@ -56,6 +67,10 @@ export default function DashboardLayout({ role }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const { user } = useUser();
   const navigate = useNavigate();
+
+  // Dev user fallback for local testing
+  const devUser = import.meta.env.DEV ? JSON.parse(localStorage.getItem('devUser') || 'null') : null;
+  const displayUser = user || devUser;
 
   const navigation = navigationConfig[role] || [];
   const roleLabel = roleLabels[role] || 'User';
@@ -101,11 +116,11 @@ export default function DashboardLayout({ role }) {
         <div className="p-4 border-b border-secondary-200">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-semibold">
-              {user?.firstName?.[0] || user?.emailAddresses?.[0]?.emailAddress?.[0]?.toUpperCase() || 'U'}
+              {displayUser?.firstName?.[0] || displayUser?.emailAddresses?.[0]?.emailAddress?.[0]?.toUpperCase() || 'U'}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-secondary-900 truncate">
-                {user?.firstName} {user?.lastName}
+                {displayUser?.firstName} {displayUser?.lastName}
               </p>
               <p className="text-xs text-secondary-500 truncate">{roleLabel}</p>
             </div>

@@ -140,6 +140,75 @@ export const adminAPI = {
   updateSettings: (data) => api.put('/admin/settings', data),
 };
 
+// TPO (Training & Placement Officer) API - Comprehensive Admin Module
+export const tpoAPI = {
+  // Dashboard
+  getDashboard: () => api.get('/tpo/dashboard'),
+  
+  // Student Management
+  getStudents: (params) => api.get('/tpo/students', { params }),
+  getStudentById: (id) => api.get(`/tpo/students/${id}`),
+  verifyStudent: (id) => api.put(`/tpo/students/${id}/verify`),
+  rejectStudent: (id, data) => api.put(`/tpo/students/${id}/reject`, data),
+  overrideEligibility: (id, data) => api.put(`/tpo/students/${id}/override-eligibility`, data),
+  updatePlacement: (id, data) => api.put(`/tpo/students/${id}/update-placement`, data),
+  blockStudent: (id, data) => api.put(`/tpo/students/${id}/block`, data),
+  unblockStudent: (id) => api.put(`/tpo/students/${id}/unblock`),
+  bulkVerifyStudents: (data) => api.post('/tpo/students/bulk-verify', data),
+  exportStudents: (params) => api.get('/tpo/students/export', { params, responseType: 'blob' }),
+  
+  // Company Management
+  getCompanies: (params) => api.get('/tpo/companies', { params }),
+  getCompanyById: (id) => api.get(`/tpo/companies/${id}`),
+  approveCompany: (id, data) => api.put(`/tpo/companies/${id}/approve`, data),
+  rejectCompany: (id, data) => api.put(`/tpo/companies/${id}/reject`, data),
+  toggleCompanyStatus: (id) => api.put(`/tpo/companies/${id}/toggle-status`),
+  updatePartnership: (id, data) => api.put(`/tpo/companies/${id}/partnership`, data),
+  getCompanyHistory: (id) => api.get(`/tpo/companies/${id}/history`),
+  
+  // Job Management
+  getJobs: (params) => api.get('/tpo/jobs', { params }),
+  getJobById: (id) => api.get(`/tpo/jobs/${id}`),
+  approveJob: (id, data) => api.put(`/tpo/jobs/${id}/approve`, data),
+  rejectJob: (id, data) => api.put(`/tpo/jobs/${id}/reject`, data),
+  lockApplications: (id) => api.put(`/tpo/jobs/${id}/lock-applications`),
+  unlockApplications: (id) => api.put(`/tpo/jobs/${id}/unlock-applications`),
+  assignBranches: (id, data) => api.put(`/tpo/jobs/${id}/assign-branches`, data),
+  exportShortlist: (id) => api.get(`/tpo/jobs/${id}/export-shortlist`, { responseType: 'blob' }),
+  updateJobDeadline: (id, data) => api.put(`/tpo/jobs/${id}/deadline`, data),
+  
+  // Application Management
+  getApplications: (params) => api.get('/tpo/applications', { params }),
+  getApplicationById: (id) => api.get(`/tpo/applications/${id}`),
+  updateApplicationStatus: (id, data) => api.put(`/tpo/applications/${id}/status`, data),
+  bulkUpdateApplications: (data) => api.post('/tpo/applications/bulk-update', data),
+  
+  // Placement Drives
+  getDrives: (params) => api.get('/tpo/drives', { params }),
+  getDriveById: (id) => api.get(`/tpo/drives/${id}`),
+  createDrive: (data) => api.post('/tpo/drives', data),
+  updateDrive: (id, data) => api.put(`/tpo/drives/${id}`, data),
+  deleteDrive: (id) => api.delete(`/tpo/drives/${id}`),
+  getDriveStats: (id) => api.get(`/tpo/drives/${id}/stats`),
+  
+  // Settings
+  getSettings: () => api.get('/tpo/settings'),
+  updateSettings: (data) => api.put('/tpo/settings', data),
+  resetSettings: () => api.post('/tpo/settings/reset'),
+  
+  // Activity Logs
+  getActivityLogs: (params) => api.get('/tpo/activity-logs', { params }),
+  exportActivityLogs: (params) => api.get('/tpo/activity-logs/export', { params, responseType: 'blob' }),
+  
+  // Reports & Analytics
+  getPlacementReport: (params) => api.get('/tpo/reports/placements', { params }),
+  getBranchReport: (params) => api.get('/tpo/reports/branches', { params }),
+  getCompanyReport: (params) => api.get('/tpo/reports/companies', { params }),
+  getTrendReport: (params) => api.get('/tpo/reports/trends', { params }),
+  exportReport: (type, params) => api.get(`/tpo/reports/${type}/export`, { params, responseType: 'blob' }),
+  generatePDFReport: (type, params) => api.post(`/tpo/reports/${type}/pdf`, params, { responseType: 'blob' }),
+};
+
 // Recruiter API
 export const recruiterAPI = {
   getMyJobs: (params) => api.get('/recruiter/jobs', { params }),

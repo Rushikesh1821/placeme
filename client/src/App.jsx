@@ -39,6 +39,18 @@ import AdminJobs from './pages/admin/Jobs';
 import AdminAnalytics from './pages/admin/Analytics';
 import AdminSettings from './pages/admin/Settings';
 
+// TPO Module Pages
+import TPODashboard from './pages/admin/TPODashboard';
+import StudentsManagement from './pages/admin/StudentsManagement';
+import CompaniesManagement from './pages/admin/CompaniesManagement';
+import JobsManagement from './pages/admin/JobsManagement';
+import TPOSettings from './pages/admin/TPOSettings';
+import ActivityLogs from './pages/admin/ActivityLogs';
+import ReportsPage from './pages/admin/ReportsPage';
+
+// Dev helpers
+import DevLogin from './pages/dev/DevLogin';
+
 // Protected Route Component
 function ProtectedRoute({ children, allowedRoles }) {
   const { user, isLoaded } = useUser();
@@ -51,21 +63,30 @@ function ProtectedRoute({ children, allowedRoles }) {
     );
   }
 
-  // Check role from Clerk metadata first, then fallback to localStorage
-  const userRole = user?.publicMetadata?.role || localStorage.getItem('userRole');
+  // Clerk-provided role (if signed in)
+  const clerkRole = user?.publicMetadata?.role;
+  // Dev fallback from localStorage (allowed only in dev mode)
+  const devRole = import.meta.env.DEV ? localStorage.getItem('userRole') : null;
 
-  if (!userRole) {
+  // If not signed in at all, redirect to sign-in
+  if (!user && !devRole) {
+    return <Navigate to="/sign-in" replace />;
+  }
+
+  // If signed-in but role not set, prompt role selection
+  const effectiveRole = clerkRole || devRole;
+  if (!effectiveRole) {
     return <Navigate to="/role-selection" replace />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(userRole)) {
+  if (allowedRoles && !allowedRoles.includes(effectiveRole)) {
     // Redirect to appropriate dashboard based on role
     const dashboardRoutes = {
       STUDENT: '/student',
       RECRUITER: '/recruiter',
       ADMIN: '/admin',
     };
-    return <Navigate to={dashboardRoutes[userRole] || '/'} replace />;
+    return <Navigate to={dashboardRoutes[effectiveRole] || '/'} replace />;
   }
 
   return children;
@@ -151,7 +172,13 @@ function App() {
           <Route path="applications" element={<StudentApplications />} />
           <Route path="resume" element={<StudentResume />} />
         </Route>
-
+        {/* Dev helpers (development only) */}
+        <Route path="/dev-login" element={<DevLogin />} />
+        {import.meta.env.DEV && (
+          <Route path="/dev-admin" element={<DashboardLayout role="admin" />}>
+            <Route index element={<TPODashboard />} />
+          </Route>
+        )}
         {/* Recruiter Routes */}
         <Route
           path="/recruiter"
@@ -189,6 +216,14 @@ function App() {
           <Route path="jobs" element={<AdminJobs />} />
           <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="settings" element={<AdminSettings />} />
+          {/* TPO Module Routes */}
+          <Route path="tpo-dashboard" element={<TPODashboard />} />
+          <Route path="students-management" element={<StudentsManagement />} />
+          <Route path="companies-management" element={<CompaniesManagement />} />
+          <Route path="jobs-management" element={<JobsManagement />} />
+          <Route path="tpo-settings" element={<TPOSettings />} />
+          <Route path="activity-logs" element={<ActivityLogs />} />
+          <Route path="reports" element={<ReportsPage />} />
         </Route>
 
         {/* Redirect signed-in users to their dashboard */}

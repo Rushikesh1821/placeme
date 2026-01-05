@@ -69,6 +69,26 @@ export default function SignInPage() {
           </Link>
         </p>
       </div>
+
+      {/* DEV ONLY: Quick sign-in as Admin for local testing */}
+      {import.meta.env.DEV && (
+        <div className="mt-6 text-center">
+          <button
+            onClick={() => {
+              // Set a dev role so ProtectedRoute allows admin pages to render
+              localStorage.setItem('userRole', 'ADMIN');
+              // Optional helper data for UI display (non-auth)
+              localStorage.setItem('devUser', JSON.stringify({ firstName: 'Dev', lastName: 'Admin' }));
+              // Notify and redirect
+              alert('Dev mode: role set to ADMIN. Redirecting to TPO Dashboard.');
+              window.location.href = '/admin/tpo-dashboard';
+            }}
+            className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-yellow-100 text-yellow-800 rounded-lg hover:bg-yellow-200 transition-colors"
+          >
+            Sign in as Admin (dev)
+          </button>
+        </div>
+      )}
     </div>
   );
 }
