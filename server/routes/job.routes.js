@@ -57,28 +57,40 @@ router.post('/', requireAuth, requireRecruiter, requireApproved, jobRules.create
 
 /**
  * @route   GET /api/jobs
- * @desc    Get all jobs (with filters)
+ * @desc    Get all jobs (with filters) - ROLE-BASED VISIBILITY
  * @access  Private
+ * 
+ * VISIBILITY RULES:
+ * - STUDENT: Only sees Active jobs with valid application deadline
+ * - RECRUITER: Only sees jobs from their own company
+ * - ADMIN: Sees ALL jobs regardless of status or company
+ * 
+ * This ensures proper data isolation while giving TPO complete visibility.
  */
 router.get('/', requireAuth, paginationRules, asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const skip = (page - 1) * limit;
 
-  // Build filter
+  // Build filter based on ROLE (NOT email or any other identifier)
   const filter = {};
 
-  // Role-based filtering
+  // Role-based filtering - ADMIN sees everything, others have restrictions
   if (req.user.role === 'STUDENT') {
+    // Students only see active jobs with valid deadlines
     filter.status = 'Active';
     filter['dates.applicationDeadline'] = { $gt: new Date() };
   } else if (req.user.role === 'RECRUITER') {
+    // Recruiters only see their own company's jobs
     const company = await Company.findOne({ user: req.user._id });
     if (company) {
       filter.company = company._id;
+    } else {
+      // If no company, return empty (recruiter hasn't set up company yet)
+      filter.company = null;
     }
   }
-  // Admin sees all
+  // ADMIN: No filter applied - sees ALL jobs from ALL companies
 
   // Additional filters
   if (req.query.status && req.user.role !== 'STUDENT') {

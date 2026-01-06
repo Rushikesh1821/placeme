@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
@@ -14,7 +15,9 @@ import {
   Sparkles,
   Target,
   TrendingUp,
+  Shield,
 } from 'lucide-react';
+import { adminAPI } from '../services/api';
 
 const features = [
   {
@@ -68,6 +71,28 @@ const testimonials = [
 ];
 
 export default function LandingPage() {
+  // State to track if admin exists in the system
+  const [adminExists, setAdminExists] = useState(true); // Default true to hide button initially
+  const [checkingAdmin, setCheckingAdmin] = useState(true);
+
+  // Check if admin exists on component mount
+  useEffect(() => {
+    const checkAdminExists = async () => {
+      try {
+        const response = await adminAPI.checkAdminExists();
+        setAdminExists(response.data.data.adminExists);
+      } catch (error) {
+        console.error('Error checking admin existence:', error);
+        // On error, assume admin exists (safer default)
+        setAdminExists(true);
+      } finally {
+        setCheckingAdmin(false);
+      }
+    };
+
+    checkAdminExists();
+  }, []);
+
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation */}
@@ -98,6 +123,16 @@ export default function LandingPage() {
             {/* Auth Buttons */}
             <div className="flex items-center gap-3">
               <SignedOut>
+                {/* Show Admin Setup button ONLY if no admin exists */}
+                {!checkingAdmin && !adminExists && (
+                  <Link 
+                    to="/admin-setup" 
+                    className="btn btn-ghost btn-md text-amber-600 hover:bg-amber-50 flex items-center gap-2"
+                  >
+                    <Shield className="w-4 h-4" />
+                    Setup Admin
+                  </Link>
+                )}
                 <Link to="/sign-in" className="btn btn-ghost btn-md">
                   Sign In
                 </Link>

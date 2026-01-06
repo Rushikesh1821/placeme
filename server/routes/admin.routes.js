@@ -7,13 +7,156 @@
 const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
-const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { requireAuth, requireAdmin, optionalAuth } = require('../middleware/auth');
 const { paginationRules, validateMongoId } = require('../middleware/validation');
 const User = require('../models/User');
 const StudentProfile = require('../models/StudentProfile');
 const Company = require('../models/Company');
 const JobPosting = require('../models/JobPosting');
 const Application = require('../models/Application');
+
+// =============================================================================
+// ADMIN EXISTENCE CHECK & FIRST ADMIN SETUP (PUBLIC ROUTES)
+// =============================================================================
+
+/**
+ * @route   GET /api/admin/check-exists
+ * @desc    Check if any admin exists in the system
+ * @access  Public
+ * 
+ * @description This is a PUBLIC endpoint that checks if any ADMIN user exists.
+ * Used to conditionally show/hide the "Setup Admin" option on the landing page.
+ * Returns adminExists: true/false only - NO sensitive data exposed.
+ */
+router.get('/check-exists', asyncHandler(async (req, res) => {
+  // Count admins in the database
+  const adminCount = await User.countDocuments({ role: 'ADMIN' });
+  
+  res.json({
+    success: true,
+    data: {
+      adminExists: adminCount > 0
+    }
+  });
+}));
+
+/**
+ * @route   POST /api/admin/setup-first-admin
+ * @desc    Create the first admin (TPO) - ONE TIME ONLY
+ * @access  Private (requires Clerk authentication but NO existing admin)
+ * 
+ * @description This endpoint allows creation of the FIRST admin only.
+ * Security Rules:
+ * 1. Only works if NO admin exists in the database
+ * 2. Requires valid Clerk authentication
+ * 3. Cannot be used if any admin already exists
+ * 4. Role is NOT based on email - it's explicitly assigned
+ * 
+ * After first admin is created, all subsequent admins must be added
+ * by an existing admin through the admin panel.
+ */
+router.post('/setup-first-admin', requireAuth, asyncHandler(async (req, res) => {
+  // CRITICAL: Check if any admin already exists
+  const existingAdmin = await User.findOne({ role: 'ADMIN' });
+  
+  if (existingAdmin) {
+    return res.status(403).json({
+      success: false,
+      message: 'Admin already exists. New admins can only be created by existing admins.',
+      code: 'ADMIN_EXISTS'
+    });
+  }
+  
+  // Get the authenticated user (from requireAuth middleware)
+  const userId = req.user._id;
+  
+  // Update the user's role to ADMIN
+  const updatedUser = await User.findByIdAndUpdate(
+    userId,
+    { 
+      role: 'ADMIN',
+      isApproved: true, // Auto-approve first admin
+    },
+    { new: true }
+  );
+  
+  if (!updatedUser) {
+    return res.status(404).json({
+      success: false,
+      message: 'User not found'
+    });
+  }
+  
+  // Log the admin creation event
+  console.log(`[ADMIN SETUP] First admin created: ${updatedUser.email} (ID: ${updatedUser._id})`);
+  
+  res.status(201).json({
+    success: true,
+    message: 'First admin account created successfully. You now have full administrative access.',
+    data: {
+      user: {
+        id: updatedUser._id,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName
+      }
+    }
+  });
+}));
+
+/**
+ * @route   POST /api/admin/create-admin
+ * @desc    Create a new admin (by existing admin only)
+ * @access  Private/Admin
+ * 
+ * @description Allows an existing admin to create new admin accounts.
+ * This is the ONLY way to create admins after the first one.
+ */
+router.post('/create-admin', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  const { userId } = req.body;
+  
+  if (!userId) {
+    return res.status(400).json({
+      success: false,
+      message: 'User ID is required'
+    });
+  }
+  
+  // Find the user to promote
+  const userToPromote = await User.findById(userId);
+  
+  if (!userToPromote) {
+    return res.status(404).json({
+      success: false,
+      message: 'User not found'
+    });
+  }
+  
+  if (userToPromote.role === 'ADMIN') {
+    return res.status(400).json({
+      success: false,
+      message: 'User is already an admin'
+    });
+  }
+  
+  // Update role to ADMIN
+  userToPromote.role = 'ADMIN';
+  userToPromote.isApproved = true;
+  await userToPromote.save();
+  
+  console.log(`[ADMIN CREATED] New admin ${userToPromote.email} created by admin ${req.user.email}`);
+  
+  res.json({
+    success: true,
+    message: `${userToPromote.email} has been promoted to admin`,
+    data: { user: userToPromote }
+  });
+}));
+
+// =============================================================================
+// PROTECTED ADMIN ROUTES (REQUIRE ADMIN ROLE)
+// =============================================================================
 
 /**
  * @route   GET /api/admin/users

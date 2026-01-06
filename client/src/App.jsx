@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { SignedIn, SignedOut, useUser, UserButton } from '@clerk/clerk-react';
 import { Toaster } from 'react-hot-toast';
+import { useState, useEffect } from 'react';
+import api from './services/api';
 
 // Layouts
 import AuthLayout from './layouts/AuthLayout';
@@ -10,6 +12,7 @@ import DashboardLayout from './layouts/DashboardLayout';
 import SignInPage from './pages/auth/SignInPage';
 import SignUpPage from './pages/auth/SignUpPage';
 import RoleSelectionPage from './pages/auth/RoleSelectionPage';
+import AdminSetupPage from './pages/auth/AdminSetupPage';
 
 // Public Pages
 import LandingPage from './pages/LandingPage';
@@ -54,8 +57,44 @@ import DevLogin from './pages/dev/DevLogin';
 // Protected Route Component
 function ProtectedRoute({ children, allowedRoles }) {
   const { user, isLoaded } = useUser();
+  const [dbRole, setDbRole] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  if (!isLoaded) {
+  // Fetch role from MongoDB when user is loaded
+  useEffect(() => {
+    const fetchRole = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      // First check Clerk metadata
+      const clerkRole = user?.publicMetadata?.role;
+      if (clerkRole) {
+        setDbRole(clerkRole);
+        setLoading(false);
+        return;
+      }
+
+      // If no Clerk role, fetch from backend
+      try {
+        const response = await api.get('/auth/me');
+        if (response.data.success && response.data.data.user) {
+          setDbRole(response.data.data.user.role);
+        }
+      } catch (error) {
+        console.error('Error fetching user role:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (isLoaded) {
+      fetchRole();
+    }
+  }, [user, isLoaded]);
+
+  if (!isLoaded || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
@@ -63,8 +102,6 @@ function ProtectedRoute({ children, allowedRoles }) {
     );
   }
 
-  // Clerk-provided role (if signed in)
-  const clerkRole = user?.publicMetadata?.role;
   // Dev fallback from localStorage (allowed only in dev mode)
   const devRole = import.meta.env.DEV ? localStorage.getItem('userRole') : null;
 
@@ -73,8 +110,10 @@ function ProtectedRoute({ children, allowedRoles }) {
     return <Navigate to="/sign-in" replace />;
   }
 
+  // Get effective role: MongoDB role > Clerk role > dev role
+  const effectiveRole = dbRole || user?.publicMetadata?.role || devRole;
+  
   // If signed-in but role not set, prompt role selection
-  const effectiveRole = clerkRole || devRole;
   if (!effectiveRole) {
     return <Navigate to="/role-selection" replace />;
   }
@@ -123,6 +162,9 @@ function App() {
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
+        
+        {/* Admin Setup Route - Only accessible when no admin exists */}
+        <Route path="/admin-setup/*" element={<AdminSetupPage />} />
 
         {/* Auth Routes */}
         <Route element={<AuthLayout />}>
@@ -246,8 +288,44 @@ function App() {
 // Helper component to redirect to appropriate dashboard
 function DashboardRedirect() {
   const { user, isLoaded } = useUser();
+  const [dbRole, setDbRole] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  if (!isLoaded) {
+  // Fetch role from MongoDB
+  useEffect(() => {
+    const fetchRole = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      // First check Clerk metadata
+      const clerkRole = user?.publicMetadata?.role;
+      if (clerkRole) {
+        setDbRole(clerkRole);
+        setLoading(false);
+        return;
+      }
+
+      // If no Clerk role, fetch from backend
+      try {
+        const response = await api.get('/auth/me');
+        if (response.data.success && response.data.data.user) {
+          setDbRole(response.data.data.user.role);
+        }
+      } catch (error) {
+        console.error('Error fetching user role:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (isLoaded) {
+      fetchRole();
+    }
+  }, [user, isLoaded]);
+
+  if (!isLoaded || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
@@ -255,7 +333,8 @@ function DashboardRedirect() {
     );
   }
 
-  const role = user?.publicMetadata?.role;
+  // Get effective role from MongoDB or Clerk
+  const role = dbRole || user?.publicMetadata?.role;
 
   if (!role) {
     return <Navigate to="/role-selection" replace />;

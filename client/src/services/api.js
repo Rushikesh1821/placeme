@@ -84,11 +84,14 @@ export const jobAPI = {
 // Application API
 export const applicationAPI = {
   getAll: (params) => api.get('/applications', { params }),
+  getAllAdmin: (params) => api.get('/applications/all', { params }), // Admin only - sees all applications
   getById: (id) => api.get(`/applications/${id}`),
   create: (jobId, data) => api.post(`/applications/${jobId}`, data),
+  apply: (data) => api.post('/applications', data), // Apply to job
   updateStatus: (id, data) => api.put(`/applications/${id}/status`, data),
   withdraw: (id) => api.delete(`/applications/${id}`),
   getByJob: (jobId) => api.get(`/applications/job/${jobId}`),
+  getMy: () => api.get('/applications/my'), // Student's own applications
 };
 
 // Resume API
@@ -126,7 +129,18 @@ export const analyticsAPI = {
 
 // Admin API
 export const adminAPI = {
+  // Admin existence check (PUBLIC - no auth required)
+  checkAdminExists: () => api.get('/admin/check-exists'),
+  
+  // First admin setup (requires Clerk auth but not admin role)
+  setupFirstAdmin: () => api.post('/admin/setup-first-admin'),
+  
+  // Create new admin (requires existing admin)
+  createAdmin: (userId) => api.post('/admin/create-admin', { userId }),
+  
+  // Dashboard & management
   getDashboard: () => api.get('/admin/dashboard'),
+  getUsers: (params) => api.get('/admin/users', { params }),
   getStudents: (params) => api.get('/admin/students', { params }),
   getRecruiters: (params) => api.get('/admin/recruiters', { params }),
   getJobs: (params) => api.get('/admin/jobs', { params }),
@@ -136,6 +150,7 @@ export const adminAPI = {
   rejectJob: (id) => api.put(`/admin/jobs/${id}/reject`),
   banUser: (id) => api.put(`/admin/users/${id}/ban`),
   unbanUser: (id) => api.put(`/admin/users/${id}/unban`),
+  updateUserRole: (userId, role) => api.patch(`/admin/user-role/${userId}`, { role }),
   getSettings: () => api.get('/admin/settings'),
   updateSettings: (data) => api.put('/admin/settings', data),
 };

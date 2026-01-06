@@ -1,7 +1,16 @@
 /**
  * Application Routes
  * 
- * @description Routes for job applications
+ * @description Routes for job applications with ROLE-BASED VISIBILITY
+ * 
+ * VISIBILITY RULES:
+ * - STUDENT: Can only see their own applications
+ * - RECRUITER: Can see applications for their company's jobs only
+ * - ADMIN: Can see ALL applications across the system
+ * 
+ * STATUS UPDATES:
+ * - Both RECRUITER and ADMIN can update application status
+ * - Changes are visible to all relevant parties (student, recruiter, admin)
  */
 
 const express = require('express');
@@ -15,6 +24,78 @@ const StudentProfile = require('../models/StudentProfile');
 const Company = require('../models/Company');
 const Resume = require('../models/Resume');
 const AIScore = require('../models/AIScore');
+
+/**
+ * @route   GET /api/applications/all
+ * @desc    Get ALL applications (Admin only - no filtering by user)
+ * @access  Private/Admin
+ * 
+ * This endpoint gives TPO complete visibility into all applications
+ * without any user-based filtering.
+ */
+router.get('/all', requireAuth, requireAdmin, paginationRules, asyncHandler(async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
+  const skip = (page - 1) * limit;
+
+  // Build filter (NO user-based filtering for admin)
+  const filter = {};
+  
+  if (req.query.status) {
+    filter.status = req.query.status;
+  }
+  
+  if (req.query.company) {
+    filter.company = req.query.company;
+  }
+  
+  if (req.query.job) {
+    filter.job = req.query.job;
+  }
+
+  const [applications, total] = await Promise.all([
+    Application.find(filter)
+      .populate({
+        path: 'student',
+        select: 'academicInfo skills personalInfo profileCompletion',
+        populate: { path: 'user', select: 'firstName lastName email profileImage' }
+      })
+      .populate('job', 'title company status')
+      .populate('company', 'companyName companyLogo')
+      .populate('studentUser', 'firstName lastName email')
+      .skip(skip)
+      .limit(limit)
+      .sort({ appliedAt: -1 }),
+    Application.countDocuments(filter)
+  ]);
+
+  // Get aggregate stats for admin dashboard
+  const stats = await Application.aggregate([
+    {
+      $group: {
+        _id: '$status',
+        count: { $sum: 1 }
+      }
+    }
+  ]);
+
+  const statsMap = {};
+  stats.forEach(s => { statsMap[s._id] = s.count; });
+
+  res.json({
+    success: true,
+    data: {
+      applications,
+      stats: statsMap,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    }
+  });
+}));
 
 /**
  * @route   POST /api/applications

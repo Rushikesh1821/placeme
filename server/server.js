@@ -23,6 +23,7 @@ const resumeRoutes = require('./routes/resume.routes');
 const aiRoutes = require('./routes/ai.routes');
 const analyticsRoutes = require('./routes/analytics.routes');
 const adminRoutes = require('./routes/admin.routes');
+const tpoRoutes = require('./routes/tpo.routes');
 const webhookRoutes = require('./routes/webhook.routes');
 
 // Import middleware
@@ -73,6 +74,7 @@ app.use('/api/resumes', resumeRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/tpo', tpoRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
